@@ -1,0 +1,869 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Manim GUI Builder Scene",
+  "type": "object",
+  "required": ["meta", "objects", "animations", "timeline", "settings"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["name", "duration"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "duration": { "type": "number", "minimum": 0 }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sceneObject" }
+    },
+    "animations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sceneAnimation" }
+    },
+    "timeline": {
+      "type": "object",
+      "required": ["tracks"],
+      "additionalProperties": false,
+      "properties": {
+        "tracks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "items"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "items": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "required": ["fps", "resolution", "background_color"],
+      "additionalProperties": false,
+      "properties": {
+        "fps": { "type": "integer", "minimum": 1 },
+        "resolution": { "type": "string", "minLength": 1 },
+        "background_color": { "type": "string", "minLength": 1 }
+      }
+    }
+    ,
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relationship" }
+    }
+  },
+  "$defs": {
+    "vec2": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "items": false
+    },
+    "range3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+      "items": false
+    },
+    "transform": {
+      "type": "object",
+      "required": ["position", "scale", "rotation"],
+      "additionalProperties": false,
+      "properties": {
+        "position": { "$ref": "#/$defs/vec2" },
+        "scale": { "type": "number" },
+        "rotation": { "type": "number" }
+      }
+    },
+    "circleObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Circle" },
+        "props": {
+          "type": "object",
+          "required": ["radius", "stroke_color"],
+          "additionalProperties": false,
+          "properties": {
+            "radius": { "type": "number", "minimum": 0 },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "textObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Text" },
+        "props": {
+          "type": "object",
+          "required": ["text", "color", "font_size"],
+          "additionalProperties": false,
+          "properties": {
+            "text": { "type": "string" },
+            "color": { "type": "string", "minLength": 1 },
+            "font_size": { "type": "number", "minimum": 1 },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "sceneObject": {
+      "oneOf": [
+        { "$ref": "#/$defs/circleObject" },
+        { "$ref": "#/$defs/textObject" },
+        { "$ref": "#/$defs/squareObject" },
+        { "$ref": "#/$defs/rectangleObject" },
+        { "$ref": "#/$defs/triangleObject" },
+        { "$ref": "#/$defs/regularPolygonObject" },
+        { "$ref": "#/$defs/ellipseObject" },
+        { "$ref": "#/$defs/lineObject" },
+        { "$ref": "#/$defs/arrowObject" },
+        { "$ref": "#/$defs/vectorObject" },
+        { "$ref": "#/$defs/axesObject" },
+        { "$ref": "#/$defs/numberPlaneObject" },
+        { "$ref": "#/$defs/texObject" },
+        { "$ref": "#/$defs/mathTexObject" },
+        { "$ref": "#/$defs/groupObject" },
+        { "$ref": "#/$defs/functionPlotObject" },
+        { "$ref": "#/$defs/braceBetweenPointsObject" },
+        { "$ref": "#/$defs/arcObject" },
+        { "$ref": "#/$defs/angleObject" }
+        ,{ "$ref": "#/$defs/graphLabelObject" }
+        ,{ "$ref": "#/$defs/verticalLineAtXObject" }
+        ,{ "$ref": "#/$defs/highlightPointObject" }
+      ]
+    },
+    "basicStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stroke_color": { "type": "string", "minLength": 1 },
+        "stroke_width": { "type": "number", "minimum": 0 },
+        "fill_color": { "type": "string", "minLength": 1 },
+        "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "shapeStyleProps": {
+      "allOf": [
+        { "$ref": "#/$defs/basicStyle" }
+      ]
+    },
+    "squareObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Square" },
+        "props": {
+          "type": "object",
+          "required": ["side_length"],
+          "additionalProperties": false,
+          "properties": {
+            "side_length": { "type": "number", "minimum": 0 },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "rectangleObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Rectangle" },
+        "props": {
+          "type": "object",
+          "required": ["width", "height"],
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "number", "minimum": 0 },
+            "height": { "type": "number", "minimum": 0 },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "triangleObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Triangle" },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "regularPolygonObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "RegularPolygon" },
+        "props": {
+          "type": "object",
+          "required": ["n"],
+          "additionalProperties": false,
+          "properties": {
+            "n": { "type": "integer", "minimum": 3 },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "ellipseObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Ellipse" },
+        "props": {
+          "type": "object",
+          "required": ["width", "height"],
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "number", "minimum": 0 },
+            "height": { "type": "number", "minimum": 0 },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "lineLikeProps": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "$ref": "#/$defs/vec2" },
+        "end": { "$ref": "#/$defs/vec2" },
+        "stroke_color": { "type": "string", "minLength": 1 },
+        "stroke_width": { "type": "number", "minimum": 0 }
+      }
+    },
+    "lineObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Line" },
+        "props": { "$ref": "#/$defs/lineLikeProps" },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "arrowObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Arrow" },
+        "props": { "$ref": "#/$defs/lineLikeProps" },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "vectorObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Vector" },
+        "props": { "$ref": "#/$defs/lineLikeProps" },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "axesObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Axes" },
+        "props": {
+          "type": "object",
+          "required": ["x_range", "y_range"],
+          "additionalProperties": false,
+          "properties": {
+            "x_range": { "$ref": "#/$defs/range3" },
+            "y_range": { "$ref": "#/$defs/range3" },
+            "x_length": { "type": "number", "minimum": 0 },
+            "y_length": { "type": "number", "minimum": 0 },
+            "tips": { "type": "boolean" }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "numberPlaneObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "NumberPlane" },
+        "props": {
+          "type": "object",
+          "required": ["x_range", "y_range"],
+          "additionalProperties": false,
+          "properties": {
+            "x_range": { "$ref": "#/$defs/range3" },
+            "y_range": { "$ref": "#/$defs/range3" },
+            "faded_line_ratio": { "type": "number", "minimum": 0 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "texLikeProps": {
+      "type": "object",
+      "required": ["tex", "font_size", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "tex": { "type": "string" },
+        "font_size": { "type": "number", "minimum": 1 },
+        "color": { "type": "string", "minLength": 1 },
+        "stroke_color": { "type": "string", "minLength": 1 },
+        "stroke_width": { "type": "number", "minimum": 0 }
+      }
+    },
+    "texObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Tex" },
+        "props": { "$ref": "#/$defs/texLikeProps" },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "mathTexObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "MathTex" },
+        "props": { "$ref": "#/$defs/texLikeProps" },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "groupObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Group" },
+        "props": {
+          "type": "object",
+          "required": ["children"],
+          "additionalProperties": false,
+          "properties": {
+            "children": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "functionPlotObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "FunctionPlot" },
+        "props": {
+          "type": "object",
+          "required": ["axes_id", "expr", "domain"],
+          "additionalProperties": false,
+          "properties": {
+            "axes_id": { "type": "string", "minLength": 1 },
+            "expr": { "type": "string", "minLength": 1 },
+            "domain": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "prefixItems": [{ "type": "number" }, { "type": "number" }],
+              "items": false
+            },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "braceBetweenPointsObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "BraceBetweenPoints" },
+        "props": {
+          "type": "object",
+          "required": ["a", "b"],
+          "additionalProperties": false,
+          "properties": {
+            "a": { "$ref": "#/$defs/vec2" },
+            "b": { "$ref": "#/$defs/vec2" },
+            "direction": { "enum": ["UP", "DOWN", "LEFT", "RIGHT"] },
+            "color": { "type": "string", "minLength": 1 },
+            "label": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "value"],
+              "properties": {
+                "type": { "enum": ["MathTex", "Tex", "Text"] },
+                "value": { "type": "string" },
+                "font_size": { "type": "number", "minimum": 1 },
+                "color": { "type": "string", "minLength": 1 }
+              }
+            },
+            "attach": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["type", "a_id", "b_id"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": { "const": "objects" },
+                    "a_id": { "type": "string", "minLength": 1 },
+                    "b_id": { "type": "string", "minLength": 1 }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": ["type", "line_id"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": { "const": "line" },
+                    "line_id": { "type": "string", "minLength": 1 }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "arcObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Arc" },
+        "props": {
+          "type": "object",
+          "required": ["radius", "start_angle", "angle"],
+          "additionalProperties": false,
+          "properties": {
+            "radius": { "type": "number", "minimum": 0 },
+            "start_angle": { "type": "number" },
+            "angle": { "type": "number" },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "angleObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "Angle" },
+        "props": {
+          "type": "object",
+          "required": ["a", "b", "c"],
+          "additionalProperties": false,
+          "properties": {
+            "a": { "$ref": "#/$defs/vec2" },
+            "b": { "$ref": "#/$defs/vec2" },
+            "c": { "$ref": "#/$defs/vec2" },
+            "radius": { "type": "number", "minimum": 0 },
+            "other_angle": { "type": "boolean" },
+            "attach": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "line1_id", "line2_id"],
+              "properties": {
+                "type": { "const": "lines" },
+                "line1_id": { "type": "string", "minLength": 1 },
+                "line2_id": { "type": "string", "minLength": 1 }
+              }
+            },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 },
+            "fill_color": { "type": "string", "minLength": 1 },
+            "fill_opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "labelSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "enum": ["MathTex", "Tex", "Text"] },
+        "value": { "type": "string" },
+        "font_size": { "type": "number", "minimum": 1 },
+        "color": { "type": "string", "minLength": 1 }
+      }
+    },
+    "graphLabelObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "GraphLabel" },
+        "props": {
+          "type": "object",
+          "required": ["plot_id", "x_value", "label"],
+          "additionalProperties": false,
+          "properties": {
+            "plot_id": { "type": "string", "minLength": 1 },
+            "x_value": { "type": "number" },
+            "label": { "$ref": "#/$defs/labelSpec" },
+            "offset": { "$ref": "#/$defs/vec2" }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "verticalLineAtXObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "VerticalLineAtX" },
+        "props": {
+          "type": "object",
+          "required": ["axes_id", "x_value"],
+          "additionalProperties": false,
+          "properties": {
+            "axes_id": { "type": "string", "minLength": 1 },
+            "plot_id": { "type": "string", "minLength": 1 },
+            "x_value": { "type": "number" },
+            "y_range": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "prefixItems": [{ "type": "number" }, { "type": "number" }],
+              "items": false
+            },
+            "stroke_color": { "type": "string", "minLength": 1 },
+            "stroke_width": { "type": "number", "minimum": 0 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "highlightPointObject": {
+      "type": "object",
+      "required": ["id", "name", "type", "props", "transform"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "const": "HighlightPoint" },
+        "props": {
+          "type": "object",
+          "required": ["axes_id", "x_value", "y_value"],
+          "additionalProperties": false,
+          "properties": {
+            "axes_id": { "type": "string", "minLength": 1 },
+            "x_value": { "type": "number" },
+            "y_value": { "type": "number" },
+            "radius": { "type": "number", "minimum": 0 },
+            "color": { "type": "string", "minLength": 1 }
+          }
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "rateFunction": {
+      "type": "string",
+      "enum": ["linear", "smooth", "rush_into", "rush_from"]
+    },
+    "fadeAnimation": {
+      "type": "object",
+      "required": ["id", "type", "targets", "start", "duration", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["FadeIn", "FadeOut"] },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "rate_function": { "$ref": "#/$defs/rateFunction" },
+        "props": { "type": "object", "maxProperties": 0, "additionalProperties": false }
+      }
+    },
+    "transformAnimation": {
+      "type": "object",
+      "required": ["id", "type", "targets", "start", "duration", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "Transform" },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "rate_function": { "$ref": "#/$defs/rateFunction" },
+        "props": {
+          "type": "object",
+          "required": ["target"],
+          "additionalProperties": false,
+          "properties": {
+            "target": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "moveAnimation": {
+      "type": "object",
+      "required": ["id", "type", "targets", "start", "duration", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "Move" },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "rate_function": { "$ref": "#/$defs/rateFunction" },
+        "props": {
+          "type": "object",
+          "required": ["to"],
+          "additionalProperties": false,
+          "properties": {
+            "to": { "$ref": "#/$defs/vec2" }
+          }
+        }
+      }
+    },
+    "sceneAnimation": {
+      "oneOf": [
+        { "$ref": "#/$defs/fadeAnimation" },
+        { "$ref": "#/$defs/transformAnimation" },
+        { "$ref": "#/$defs/moveAnimation" },
+        { "$ref": "#/$defs/simpleAnimation" },
+        { "$ref": "#/$defs/replacementTransformAnimation" },
+        { "$ref": "#/$defs/scaleAnimation" },
+        { "$ref": "#/$defs/rotateAnimation" }
+      ]
+    },
+    "simpleAnimation": {
+      "type": "object",
+      "required": ["id", "type", "targets", "start", "duration", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["Create", "Write"] },
+        "targets": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "rate_function": { "$ref": "#/$defs/rateFunction" },
+        "props": { "type": "object", "maxProperties": 0, "additionalProperties": false }
+      }
+    },
+    "replacementTransformAnimation": {
+      "type": "object",
+      "required": ["id", "type", "targets", "start", "duration", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "ReplacementTransform" },
+        "targets": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "rate_function": { "$ref": "#/$defs/rateFunction" },
+        "props": {
+          "type": "object",
+          "required": ["target"],
+          "additionalProperties": false,
+          "properties": { "target": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "scaleAnimation": {
+      "type": "object",
+      "required": ["id", "type", "targets", "start", "duration", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "Scale" },
+        "targets": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "rate_function": { "$ref": "#/$defs/rateFunction" },
+        "props": {
+          "type": "object",
+          "required": ["factor"],
+          "additionalProperties": false,
+          "properties": { "factor": { "type": "number" } }
+        }
+      }
+    },
+    "rotateAnimation": {
+      "type": "object",
+      "required": ["id", "type", "targets", "start", "duration", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "Rotate" },
+        "targets": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "rate_function": { "$ref": "#/$defs/rateFunction" },
+        "props": {
+          "type": "object",
+          "required": ["angle"],
+          "additionalProperties": false,
+          "properties": { "angle": { "type": "number" } }
+        }
+      }
+    }
+    ,
+    "relationship": {
+      "oneOf": [
+        { "$ref": "#/$defs/relLineBetweenObjects" },
+        { "$ref": "#/$defs/relLabelFollowsObject" },
+        { "$ref": "#/$defs/relBraceFollows" }
+      ]
+    },
+    "relLineBetweenObjects": {
+      "type": "object",
+      "required": ["id", "type", "line_id", "a_id", "b_id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "LineBetweenObjects" },
+        "line_id": { "type": "string", "minLength": 1 },
+        "a_id": { "type": "string", "minLength": 1 },
+        "b_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "relLabelFollowsObject": {
+      "type": "object",
+      "required": ["id", "type", "label_id", "target_id", "offset"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "LabelFollowsObject" },
+        "label_id": { "type": "string", "minLength": 1 },
+        "target_id": { "type": "string", "minLength": 1 },
+        "offset": { "$ref": "#/$defs/vec2" }
+      }
+    },
+    "relBraceFollows": {
+      "type": "object",
+      "required": ["id", "type", "brace_id", "a_id", "b_id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "BraceFollows" },
+        "brace_id": { "type": "string", "minLength": 1 },
+        "a_id": { "type": "string", "minLength": 1 },
+        "b_id": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["UP", "DOWN", "LEFT", "RIGHT"] }
+      }
+    }
+  }
+}

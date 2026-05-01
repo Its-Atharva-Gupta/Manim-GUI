@@ -1,0 +1,66 @@
+.elementsRoot {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panelTitle {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.section {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.elementsRoot button {
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.elementsRoot button:hover {
+  background: #f9fafb;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.fileLabel {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.fileLabel:hover {
+  background: #f9fafb;
+}
+
+.fileLabel input {
+  display: none;
+}
+

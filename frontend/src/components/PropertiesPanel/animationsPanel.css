@@ -1,0 +1,82 @@
+.animPanel {
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.animHeader {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.animButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.animButtons button {
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+}
+
+.animButtons button:hover {
+  background: #f9fafb;
+}
+
+.animList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.animRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  align-items: center;
+}
+
+.animType {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.animMeta {
+  font-size: 12px;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.animRow select {
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 12px;
+}
+
+.animRow input[type="number"] {
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.animEmpty {
+  font-size: 12px;
+  color: #6b7280;
+}

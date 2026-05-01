@@ -1,0 +1,114 @@
+.timelineRoot {
+  height: 170px;
+  background: #0b1220;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineHeader {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px;
+  color: #e5e7eb;
+}
+
+.timelineHeader button {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
+  cursor: pointer;
+}
+
+.scrub {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 14px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.scrub input[type="range"] {
+  width: 100%;
+}
+
+.timeVal {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.timelineScroll {
+  flex: 1;
+  overflow: auto;
+}
+
+.timeline {
+  position: relative;
+  min-height: 120px;
+  padding: 8px 8px 14px 8px;
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #f59e0b;
+  opacity: 0.9;
+}
+
+.track {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.trackLabel {
+  font-size: 12px;
+  color: #9ca3af;
+  padding-top: 6px;
+}
+
+.trackLane {
+  position: relative;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.item {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  display: flex;
+}
+
+.itemBody {
+  flex: 1;
+  border-radius: 6px;
+  background: rgba(96, 165, 250, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #0b1220;
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: grab;
+  user-select: none;
+}
+
+.itemHandle {
+  width: 10px;
+  margin-left: 4px;
+  border-radius: 6px;
+  background: rgba(251, 191, 36, 0.85);
+  cursor: ew-resize;
+}
+

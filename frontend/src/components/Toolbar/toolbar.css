@@ -1,0 +1,34 @@
+.toolbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.toolbarTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin-right: 12px;
+}
+
+.toolbarGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbar button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+}
+
+.toolbar button:hover {
+  background: #f9fafb;
+}
+
