@@ -24,6 +24,13 @@ function migrateObject(o: any): any {
       if (o.props.stroke_width == null) o.props.stroke_width = 4;
     }
   }
+  if (o.type === "Tex" || o.type === "MathTex") {
+    if (o.props && typeof o.props === "object" && typeof o.props.tex === "string") {
+      // Older scenes/defaults sometimes double-escaped LaTeX (e.g. "\\\\int" instead of "\\int"),
+      // resulting in a literal backslash sequence reaching Manim. Collapse doubled backslashes.
+      o.props.tex = o.props.tex.replace(/\\\\/g, "\\");
+    }
+  }
   return o;
 }
 
@@ -32,4 +39,3 @@ function migrateAnimation(a: any): any {
   if (a.rate_function == null) a.rate_function = "linear";
   return a;
 }
-

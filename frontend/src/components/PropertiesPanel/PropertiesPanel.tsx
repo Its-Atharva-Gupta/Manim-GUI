@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useHistoryStore } from "../../store/historyStore";
 import { useSceneStore } from "../../store/sceneStore";
 import DragNumberInput from "./DragNumberInput";
+import ColorInput from "./ColorInput";
 
 import "./properties.css";
 
@@ -10,6 +11,7 @@ export default function PropertiesPanel() {
   const scene = useHistoryStore((s) => s.present);
   const selectedObjectIds = useSceneStore((s) => s.selectedObjectIds);
   const updateObject = useSceneStore((s) => s.updateObject);
+  const deleteSelectedObjects = useSceneStore((s) => s.deleteSelectedObjects);
 
   const selected = useMemo(
     () => scene.objects.find((o) => o.id === selectedObjectIds[0]) ?? null,
@@ -65,6 +67,21 @@ export default function PropertiesPanel() {
       <div className="panelGroup">
         <div className="groupTitle">Style</div>
         {renderStyleSection(selected, updateObject)}
+      </div>
+
+      <div className="panelGroup">
+        <div className="groupTitle">Danger</div>
+        <button
+          className="dangerButton"
+          onClick={() => {
+            const count = selectedObjectIds.length || 1;
+            const ok = window.confirm(`Delete ${count} object${count === 1 ? "" : "s"}? This also removes related animations.`);
+            if (!ok) return;
+            deleteSelectedObjects();
+          }}
+        >
+          Delete Object{selectedObjectIds.length > 1 ? "s" : ""}
+        </button>
       </div>
     </div>
   );
@@ -174,14 +191,15 @@ function renderStyleSection(selected: any, updateObject: any) {
           min={0}
           onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== selected.type ? o : { ...o, props: { ...o.props, stroke_width: v } }))}
         />
-        <label className="row">
-          <span>Stroke</span>
-          <input
-            type="text"
-            value={selected.props.stroke_color ?? "WHITE"}
-            onChange={(e) => updateObject(selected.id, (o: any) => (o.type !== selected.type ? o : { ...o, props: { ...o.props, stroke_color: e.target.value } }))}
-          />
-        </label>
+        <ColorInput
+          label="Stroke"
+          value={selected.props.stroke_color ?? "WHITE"}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== selected.type ? o : { ...o, props: { ...o.props, stroke_color: hex } }
+            )
+          }
+        />
         <DragNumberInput
           label="StartX"
           value={selected.props.start[0]}
@@ -230,12 +248,15 @@ function renderStyleSection(selected: any, updateObject: any) {
         />
         <label className="row">
           <span>Fill</span>
-          <input
-            type="text"
-            value={selected.props.color}
-            onChange={(e) => updateObject(selected.id, (o: any) => (o.type !== "Text" ? o : { ...o, props: { ...o.props, color: e.target.value } }))}
-          />
+          <input type="hidden" />
         </label>
+        <ColorInput
+          label="Fill"
+          value={selected.props.color}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) => (o.type !== "Text" ? o : { ...o, props: { ...o.props, color: hex } }))
+          }
+        />
         <DragNumberInput
           label="StrokeW"
           value={selected.props.stroke_width ?? 0}
@@ -243,15 +264,15 @@ function renderStyleSection(selected: any, updateObject: any) {
           min={0}
           onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== "Text" ? o : { ...o, props: { ...o.props, stroke_width: v } }))}
         />
-        <label className="row">
-          <span>Stroke</span>
-          <input
-            type="text"
-            value={selected.props.stroke_color ?? ""}
-            placeholder="(auto)"
-            onChange={(e) => updateObject(selected.id, (o: any) => (o.type !== "Text" ? o : { ...o, props: { ...o.props, stroke_color: e.target.value || undefined } }))}
-          />
-        </label>
+        <ColorInput
+          label="Stroke"
+          value={selected.props.stroke_color ?? selected.props.color}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== "Text" ? o : { ...o, props: { ...o.props, stroke_color: hex } }
+            )
+          }
+        />
       </>
     );
   }
@@ -274,14 +295,15 @@ function renderStyleSection(selected: any, updateObject: any) {
           min={1}
           onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== selected.type ? o : { ...o, props: { ...o.props, font_size: v } }))}
         />
-        <label className="row">
-          <span>Fill</span>
-          <input
-            type="text"
-            value={selected.props.color}
-            onChange={(e) => updateObject(selected.id, (o: any) => (o.type !== selected.type ? o : { ...o, props: { ...o.props, color: e.target.value } }))}
-          />
-        </label>
+        <ColorInput
+          label="Fill"
+          value={selected.props.color}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== selected.type ? o : { ...o, props: { ...o.props, color: hex } }
+            )
+          }
+        />
       </>
     );
   }
@@ -332,18 +354,15 @@ function renderStyleSection(selected: any, updateObject: any) {
             )
           }
         />
-        <label className="row">
-          <span>Stroke</span>
-          <input
-            type="text"
-            value={selected.props.stroke_color ?? "YELLOW"}
-            onChange={(e) =>
-              updateObject(selected.id, (o: any) =>
-                o.type !== "FunctionPlot" ? o : { ...o, props: { ...o.props, stroke_color: e.target.value } }
-              )
-            }
-          />
-        </label>
+        <ColorInput
+          label="Stroke"
+          value={selected.props.stroke_color ?? "YELLOW"}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== "FunctionPlot" ? o : { ...o, props: { ...o.props, stroke_color: hex } }
+            )
+          }
+        />
       </>
     );
   }
@@ -387,6 +406,15 @@ function renderStyleSection(selected: any, updateObject: any) {
             <option value="RIGHT">RIGHT</option>
           </select>
         </label>
+        <ColorInput
+          label="Color"
+          value={selected.props.color ?? "WHITE"}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== "BraceBetweenPoints" ? o : { ...o, props: { ...o.props, color: hex } }
+            )
+          }
+        />
         <label className="row">
           <span>Label</span>
           <input
@@ -401,6 +429,78 @@ function renderStyleSection(selected: any, updateObject: any) {
             }
           />
         </label>
+        <ColorInput
+          label="LblCol"
+          value={selected.props.label?.color ?? selected.props.color ?? "WHITE"}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== "BraceBetweenPoints"
+                ? o
+                : { ...o, props: { ...o.props, label: { ...(o.props.label ?? { type: "MathTex", value: "" }), color: hex } } }
+            )
+          }
+        />
+      </>
+    );
+  }
+
+  if (selected.type === "HighlightPoint") {
+    return (
+      <>
+        <DragNumberInput label="X" value={selected.props.x_value} step={0.1} onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== "HighlightPoint" ? o : { ...o, props: { ...o.props, x_value: v } }))} />
+        <DragNumberInput label="Y" value={selected.props.y_value} step={0.1} onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== "HighlightPoint" ? o : { ...o, props: { ...o.props, y_value: v } }))} />
+        <DragNumberInput label="Radius" value={selected.props.radius ?? 0.08} step={0.01} min={0} onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== "HighlightPoint" ? o : { ...o, props: { ...o.props, radius: v } }))} />
+        <ColorInput
+          label="Color"
+          value={selected.props.color ?? "YELLOW"}
+          onChange={(hex) => updateObject(selected.id, (o: any) => (o.type !== "HighlightPoint" ? o : { ...o, props: { ...o.props, color: hex } }))}
+        />
+      </>
+    );
+  }
+
+  if (selected.type === "GraphLabel") {
+    return (
+      <>
+        <DragNumberInput label="X" value={selected.props.x_value} step={0.1} onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== "GraphLabel" ? o : { ...o, props: { ...o.props, x_value: v } }))} />
+        <DragNumberInput label="OffX" value={selected.props.offset?.[0] ?? 0} step={0.05} onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== "GraphLabel" ? o : { ...o, props: { ...o.props, offset: [v, o.props.offset?.[1] ?? 0] } }))} />
+        <DragNumberInput label="OffY" value={selected.props.offset?.[1] ?? 0} step={0.05} onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== "GraphLabel" ? o : { ...o, props: { ...o.props, offset: [o.props.offset?.[0] ?? 0, v] } }))} />
+        <label className="row">
+          <span>Label</span>
+          <input
+            type="text"
+            value={selected.props.label?.value ?? ""}
+            onChange={(e) =>
+              updateObject(selected.id, (o: any) =>
+                o.type !== "GraphLabel"
+                  ? o
+                  : { ...o, props: { ...o.props, label: { ...(o.props.label ?? { type: "MathTex" }), value: e.target.value } } }
+              )
+            }
+          />
+        </label>
+        <DragNumberInput
+          label="Font"
+          value={selected.props.label?.font_size ?? 36}
+          step={1}
+          min={1}
+          onChange={(v) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== "GraphLabel"
+                ? o
+                : { ...o, props: { ...o.props, label: { ...(o.props.label ?? { type: "MathTex", value: "" }), font_size: v } } }
+            )
+          }
+        />
+        <ColorInput
+          label="Color"
+          value={selected.props.label?.color ?? "WHITE"}
+          onChange={(hex) =>
+            updateObject(selected.id, (o: any) =>
+              o.type !== "GraphLabel" ? o : { ...o, props: { ...o.props, label: { ...(o.props.label ?? { type: "MathTex", value: "" }), color: hex } } }
+            )
+          }
+        />
       </>
     );
   }
@@ -498,27 +598,24 @@ function renderStrokeFill(selected: any, updateObject: any) {
         min={0}
         onChange={(v) => updateObject(selected.id, (o: any) => (o.type !== selected.type ? o : { ...o, props: { ...o.props, stroke_width: v } }))}
       />
-      <label className="row">
-        <span>Stroke</span>
-        <input
-          type="text"
-          value={strokeColor}
-          onChange={(e) => updateObject(selected.id, (o: any) => (o.type !== selected.type ? o : { ...o, props: { ...o.props, stroke_color: e.target.value } }))}
-        />
-      </label>
-      <label className="row">
-        <span>Fill</span>
-        <input
-          type="text"
-          value={selected.props.fill_color ?? ""}
-          placeholder="(none)"
-          onChange={(e) =>
-            updateObject(selected.id, (o: any) =>
-              o.type !== selected.type ? o : { ...o, props: { ...o.props, fill_color: e.target.value || undefined } }
-            )
-          }
-        />
-      </label>
+      <ColorInput
+        label="Stroke"
+        value={strokeColor}
+        onChange={(hex) =>
+          updateObject(selected.id, (o: any) =>
+            o.type !== selected.type ? o : { ...o, props: { ...o.props, stroke_color: hex } }
+          )
+        }
+      />
+      <ColorInput
+        label="Fill"
+        value={selected.props.fill_color ?? "#ffffff"}
+        onChange={(hex) =>
+          updateObject(selected.id, (o: any) =>
+            o.type !== selected.type ? o : { ...o, props: { ...o.props, fill_color: hex } }
+          )
+        }
+      />
       <DragNumberInput
         label="FillOp"
         value={selected.props.fill_opacity ?? 0}

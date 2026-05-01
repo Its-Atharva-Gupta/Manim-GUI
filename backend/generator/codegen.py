@@ -31,7 +31,7 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
     emit("# scene settings")
     bg = settings.get("background_color")
     if bg:
-        emit(f"self.camera.background_color = {bg}")
+        emit(f"self.camera.background_color = {_py_color(bg)}")
         emit()
 
     emit("# objects")
@@ -47,7 +47,7 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
         if obj["type"] == "Circle":
             radius = obj["props"]["radius"]
             stroke_color = obj["props"]["stroke_color"]
-            emit(f"{var} = Circle(radius={radius}, color={stroke_color})")
+            emit(f"{var} = Circle(radius={radius}, color={_py_color(stroke_color)})")
             _emit_style(emit, var, obj["props"], default_stroke_color=stroke_color)
         elif obj["type"] == "Square":
             side = obj["props"]["side_length"]
@@ -123,30 +123,32 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
             text = _py_str(obj["props"]["text"])
             color = obj["props"]["color"]
             font_size = obj["props"]["font_size"]
-            emit(f'{var} = Text({text}, color={color}, font_size={font_size}, font="Times New Roman")')
+            emit(f'{var} = Text({text}, color={_py_color(color)}, font_size={font_size}, font="Times New Roman")')
             stroke_width = obj["props"].get("stroke_width")
             stroke_color = obj["props"].get("stroke_color")
             if stroke_width is not None and stroke_width > 0:
                 sc = stroke_color if stroke_color is not None else color
-                emit(f"{var}.set_stroke(color={sc}, width={stroke_width})")
+                emit(f"{var}.set_stroke(color={_py_color(sc)}, width={stroke_width})")
         elif obj["type"] == "Tex":
             tex = _py_str(obj["props"]["tex"])
             color = obj["props"]["color"]
             font_size = obj["props"]["font_size"]
-            emit(f"{var} = Tex({tex}, color={color}, font_size={font_size})")
+            emit(f"{var} = Tex({tex}, color={_py_color(color)}, font_size={font_size})")
             _emit_text_stroke(emit, var, obj["props"], default_color=color)
         elif obj["type"] == "MathTex":
             tex = _py_str(obj["props"]["tex"])
             color = obj["props"]["color"]
             font_size = obj["props"]["font_size"]
-            emit(f"{var} = MathTex({tex}, color={color}, font_size={font_size})")
+            emit(f"{var} = MathTex({tex}, color={_py_color(color)}, font_size={font_size})")
             _emit_text_stroke(emit, var, obj["props"], default_color=color)
         elif obj["type"] == "BraceBetweenPoints":
             a = obj["props"]["a"]
             b = obj["props"]["b"]
             direction = obj["props"].get("direction", "DOWN")
             color = obj["props"].get("color", "WHITE")
-            emit(f"{var} = BraceBetweenPoints([{a[0]}, {a[1]}, 0], [{b[0]}, {b[1]}, 0], direction={direction}, color={color})")
+            emit(
+                f"{var} = BraceBetweenPoints([{a[0]}, {a[1]}, 0], [{b[0]}, {b[1]}, 0], direction={direction}, color={_py_color(color)})"
+            )
             label = obj["props"].get("label")
             if label and isinstance(label, dict) and label.get("value"):
                 ltype = label.get("type", "MathTex")
@@ -155,19 +157,19 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
                 lfs = label.get("font_size")
                 if ltype == "Text":
                     if lfs is None:
-                        emit(f"{var}_label = Text({lval}, color={lcolor})")
+                        emit(f"{var}_label = Text({lval}, color={_py_color(lcolor)})")
                     else:
-                        emit(f"{var}_label = Text({lval}, color={lcolor}, font_size={lfs}, font=\"Times New Roman\")")
+                        emit(f"{var}_label = Text({lval}, color={_py_color(lcolor)}, font_size={lfs}, font=\"Times New Roman\")")
                 elif ltype == "Tex":
                     if lfs is None:
-                        emit(f"{var}_label = Tex({lval}, color={lcolor})")
+                        emit(f"{var}_label = Tex({lval}, color={_py_color(lcolor)})")
                     else:
-                        emit(f"{var}_label = Tex({lval}, color={lcolor}, font_size={lfs})")
+                        emit(f"{var}_label = Tex({lval}, color={_py_color(lcolor)}, font_size={lfs})")
                 else:
                     if lfs is None:
-                        emit(f"{var}_label = MathTex({lval}, color={lcolor})")
+                        emit(f"{var}_label = MathTex({lval}, color={_py_color(lcolor)})")
                     else:
-                        emit(f"{var}_label = MathTex({lval}, color={lcolor}, font_size={lfs})")
+                        emit(f"{var}_label = MathTex({lval}, color={_py_color(lcolor)}, font_size={lfs})")
                 emit(f"{var}_label.next_to({var}, {direction})")
         elif obj["type"] == "Arc":
             r = obj["props"]["radius"]
@@ -209,7 +211,7 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
             if stroke_color is not None or stroke_width is not None:
                 args: list[str] = []
                 if stroke_color is not None:
-                    args.append(f"color={stroke_color}")
+                    args.append(f"color={_py_color(stroke_color)}")
                 if stroke_width is not None:
                     args.append(f"width={stroke_width}")
                 emit(f"{var}.set_stroke({', '.join(args)})")
@@ -222,7 +224,7 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
             y_value = obj["props"]["y_value"]
             radius = obj["props"].get("radius", 0.08)
             color = obj["props"].get("color", "YELLOW")
-            emit(f"{var} = Dot({axes_var}.c2p({x_value}, {y_value}), radius={radius}, color={color})")
+            emit(f"{var} = Dot({axes_var}.c2p({x_value}, {y_value}), radius={radius}, color={_py_color(color)})")
         elif obj["type"] == "GraphLabel":
             plot_id = obj["props"]["plot_id"]
             plot_obj = next((o for o in objects if o.get("id") == plot_id), None)
@@ -240,19 +242,19 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
             lfs = label.get("font_size")
             if ltype == "Text":
                 if lfs is None:
-                    emit(f"{var} = Text({lval}, color={lcolor})")
+                    emit(f"{var} = Text({lval}, color={_py_color(lcolor)})")
                 else:
-                    emit(f"{var} = Text({lval}, color={lcolor}, font_size={lfs}, font=\"Times New Roman\")")
+                    emit(f"{var} = Text({lval}, color={_py_color(lcolor)}, font_size={lfs}, font=\"Times New Roman\")")
             elif ltype == "Tex":
                 if lfs is None:
-                    emit(f"{var} = Tex({lval}, color={lcolor})")
+                    emit(f"{var} = Tex({lval}, color={_py_color(lcolor)})")
                 else:
-                    emit(f"{var} = Tex({lval}, color={lcolor}, font_size={lfs})")
+                    emit(f"{var} = Tex({lval}, color={_py_color(lcolor)}, font_size={lfs})")
             else:
                 if lfs is None:
-                    emit(f"{var} = MathTex({lval}, color={lcolor})")
+                    emit(f"{var} = MathTex({lval}, color={_py_color(lcolor)})")
                 else:
-                    emit(f"{var} = MathTex({lval}, color={lcolor}, font_size={lfs})")
+                    emit(f"{var} = MathTex({lval}, color={_py_color(lcolor)}, font_size={lfs})")
             emit(f"{var}.move_to({axes_var}.input_to_graph_point({x_value}, {graph_var}) + [{offset[0]}, {offset[1]}, 0])")
         else:
             raise ValueError(f"Unsupported object type: {obj['type']}")
@@ -297,7 +299,7 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
                 stroke_width = (line_obj or {}).get("props", {}).get("stroke_width")
                 style = []
                 if stroke_color is not None:
-                    style.append(f"color={stroke_color}")
+                    style.append(f"color={_py_color(stroke_color)}")
                 if stroke_width is not None:
                     style.append(f"width={stroke_width}")
                 style_expr = f".set_stroke({', '.join(style)})" if style else ""
@@ -323,7 +325,7 @@ def generate_scene_py(scene: dict[str, Any]) -> GeneratedFile:
                 brace_obj = next((o for o in objects if o.get("id") == brace_id), None)
                 color = (brace_obj or {}).get("props", {}).get("color", "WHITE")
                 emit(
-                    f"{id_to_var[brace_id]}.add_updater(lambda z: z.become(BraceBetweenPoints({id_to_var[a_id]}.get_center(), {id_to_var[b_id]}.get_center(), direction={direction}, color={color})))"
+                    f"{id_to_var[brace_id]}.add_updater(lambda z: z.become(BraceBetweenPoints({id_to_var[a_id]}.get_center(), {id_to_var[b_id]}.get_center(), direction={direction}, color={_py_color(color)})))"
                 )
         emit()
 
@@ -474,6 +476,31 @@ def _py_str(s: str) -> str:
     return repr(s)
 
 
+_HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+_MANIM_COLOR_IDENT_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+
+
+def _py_color(value: Any) -> str:
+    """
+    Convert a scene color value into a valid Python expression for Manim.
+
+    Supported inputs:
+    - Manim constants like "BLUE" -> BLUE (no quotes)
+    - Hex strings like "#1e90ff" -> "#1e90ff" (quoted)
+    - Other strings -> quoted (best-effort; Manim may or may not accept them)
+    """
+    if value is None:
+        return "None"
+    if isinstance(value, str):
+        s = value.strip()
+        if _HEX_COLOR_RE.match(s):
+            return repr(s.lower())
+        if _MANIM_COLOR_IDENT_RE.match(s):
+            return s
+        return repr(s)
+    return repr(value)
+
+
 def _indent(line: str, level: int) -> str:
     return (" " * (4 * level)) + line if line else ""
 
@@ -484,7 +511,7 @@ def _emit_style(emit: Any, var: str, props: dict[str, Any], default_stroke_color
     if stroke_color is not None or stroke_width is not None:
         args: list[str] = []
         if stroke_color is not None:
-            args.append(f"color={stroke_color}")
+            args.append(f"color={_py_color(stroke_color)}")
         if stroke_width is not None:
             args.append(f"width={stroke_width}")
         emit(f"{var}.set_stroke({', '.join(args)})")
@@ -494,7 +521,7 @@ def _emit_style(emit: Any, var: str, props: dict[str, Any], default_stroke_color
     if fill_color is not None or fill_opacity is not None:
         fc = fill_color if fill_color is not None else (stroke_color if stroke_color is not None else "WHITE")
         fo = fill_opacity if fill_opacity is not None else 0
-        emit(f"{var}.set_fill(color={fc}, opacity={fo})")
+        emit(f"{var}.set_fill(color={_py_color(fc)}, opacity={fo})")
 
 
 def _emit_line_style(emit: Any, var: str, props: dict[str, Any]) -> None:
@@ -502,7 +529,7 @@ def _emit_line_style(emit: Any, var: str, props: dict[str, Any]) -> None:
     stroke_width = props.get("stroke_width")
     args: list[str] = []
     if stroke_color is not None:
-        args.append(f"color={stroke_color}")
+        args.append(f"color={_py_color(stroke_color)}")
     if stroke_width is not None:
         args.append(f"width={stroke_width}")
     if args:
@@ -514,7 +541,7 @@ def _emit_text_stroke(emit: Any, var: str, props: dict[str, Any], default_color:
     stroke_color = props.get("stroke_color")
     if stroke_width is not None and stroke_width > 0:
         sc = stroke_color if stroke_color is not None else default_color
-        emit(f"{var}.set_stroke(color={sc}, width={stroke_width})")
+        emit(f"{var}.set_stroke(color={_py_color(sc)}, width={stroke_width})")
 
 
 def _group_by_duration_and_rate(anims: Iterable[dict[str, Any]]) -> list[list[dict[str, Any]]]:

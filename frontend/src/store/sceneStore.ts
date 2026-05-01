@@ -46,6 +46,7 @@ type SceneStore = {
   updateAnimation: (animId: string, patch: { start?: number; duration?: number }) => void;
   updateAnimationFull: (animId: string, updater: (a: SceneAnimation) => SceneAnimation) => void;
   deleteAnimation: (animId: string) => void;
+  deleteSelectedObjects: () => void;
   addRelationship: (rel: Relationship) => void;
   deleteRelationship: (relId: string) => void;
   undo: () => void;
@@ -144,7 +145,7 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
   addAxes: () => addGenericObject(set, "Axes", { x_range: [-6, 6, 1], y_range: [-3.5, 3.5, 1], tips: true }),
   addNumberPlane: () => addGenericObject(set, "NumberPlane", { x_range: [-6, 6, 1], y_range: [-3.5, 3.5, 1], faded_line_ratio: 2 }),
   addTex: () => addGenericObject(set, "Tex", { tex: "E=mc^2", font_size: 48, color: "WHITE", stroke_width: 0 }),
-  addMathTex: () => addGenericObject(set, "MathTex", { tex: "\\\\int_0^1 x^2 dx", font_size: 48, color: "WHITE", stroke_width: 0 }),
+  addMathTex: () => addGenericObject(set, "MathTex", { tex: "\\int_0^1 x^2 dx", font_size: 48, color: "WHITE", stroke_width: 0 }),
   addFunctionPlot: () => {
     const scene = useHistoryStore.getState().present;
     const axes = scene.objects.find((o: any) => o.type === "Axes");
@@ -344,6 +345,95 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
         tracks: s.timeline.tracks.map((t) => ({ ...t, items: t.items.filter((id) => id !== animId) }))
       }
     }));
+  },
+  deleteSelectedObjects: () => {
+    const ids = get().selectedObjectIds;
+    if (ids.length === 0) return;
+    const removed = new Set(ids);
+    const scene = useHistoryStore.getState().present;
+    updateScene(scene, (s) => {
+      const removedObjectIds = new Set(ids);
+
+      let objects: SceneObjectV2[] = s.objects
+        .filter((o) => !removed.has(o.id))
+        .map((o) => {
+          if (o.type !== "Group") return o;
+          const children: string[] = Array.isArray((o as any).props?.children) ? (o as any).props.children : [];
+          return { ...o, props: { ...(o as any).props, children: children.filter((cid) => !removed.has(cid)) } } as any;
+        });
+
+      // Cascade removals for objects that reference missing ids.
+      // Also strip VerticalLineAtX.plot_id if the plot is missing so it can fall back to c2p().
+      let changed = true;
+      while (changed) {
+        changed = false;
+        const existing = new Set(objects.map((o) => o.id));
+        const next: SceneObjectV2[] = [];
+        for (const o of objects) {
+          if (o.type === "FunctionPlot") {
+            if (!existing.has((o as any).props.axes_id)) {
+              changed = true;
+              removedObjectIds.add(o.id);
+              continue;
+            }
+          } else if (o.type === "GraphLabel") {
+            if (!existing.has((o as any).props.plot_id)) {
+              changed = true;
+              removedObjectIds.add(o.id);
+              continue;
+            }
+          } else if (o.type === "VerticalLineAtX") {
+            if (!existing.has((o as any).props.axes_id)) {
+              changed = true;
+              removedObjectIds.add(o.id);
+              continue;
+            }
+            const pid = (o as any).props.plot_id;
+            if (pid && !existing.has(pid)) {
+              changed = true;
+              next.push({ ...(o as any), props: { ...(o as any).props, plot_id: undefined } });
+              continue;
+            }
+          } else if (o.type === "HighlightPoint") {
+            if (!existing.has((o as any).props.axes_id)) {
+              changed = true;
+              removedObjectIds.add(o.id);
+              continue;
+            }
+          }
+          next.push(o);
+        }
+        objects = next;
+      }
+
+      const animations = (s.animations ?? []).filter((a: any) => {
+        if (!Array.isArray(a.targets) || a.targets.some((t: string) => removedObjectIds.has(t))) return false;
+        if ((a.type === "Transform" || a.type === "ReplacementTransform") && removedObjectIds.has((a as any).props?.target)) return false;
+        return true;
+      });
+      const removedAnimIds = new Set((s.animations ?? []).filter((a: any) => !animations.includes(a as any)).map((a: any) => a.id));
+
+      const tracks = (s.timeline?.tracks ?? []).map((t) => ({
+        ...t,
+        items: (t.items ?? []).filter((id) => !removedAnimIds.has(id))
+      }));
+
+      const relationships = (s.relationships ?? []).filter((r: any) => {
+        if (r.type === "LineBetweenObjects") return !removedObjectIds.has(r.line_id) && !removedObjectIds.has(r.a_id) && !removedObjectIds.has(r.b_id);
+        if (r.type === "LabelFollowsObject") return !removedObjectIds.has(r.label_id) && !removedObjectIds.has(r.target_id);
+        if (r.type === "BraceFollows") return !removedObjectIds.has(r.brace_id) && !removedObjectIds.has(r.a_id) && !removedObjectIds.has(r.b_id);
+        return true;
+      });
+
+      return {
+        ...s,
+        objects,
+        animations,
+        timeline: { ...(s.timeline ?? { tracks: [] }), tracks },
+        relationships
+      };
+    });
+    set({ selectedObjectIds: [] });
   },
   addRelationship: (rel) => {
     const scene = useHistoryStore.getState().present;

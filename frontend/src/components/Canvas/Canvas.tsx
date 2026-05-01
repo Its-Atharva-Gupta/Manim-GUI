@@ -4,9 +4,10 @@ import type Konva from "konva";
 import { create, all, MathNode } from "mathjs";
 
 import { useHistoryStore } from "../../store/historyStore";
-import { usePreviewStore } from "../../store/previewStore";
 import { useSceneStore } from "../../store/sceneStore";
 import { useUiStore } from "../../store/uiStore";
+import { normalizeToCssColor } from "../../shared/colors";
+import LatexOverlay from "./LatexOverlay";
 import {
   DEFAULT_FRAME_HEIGHT,
   DEFAULT_FRAME_WIDTH,
@@ -21,7 +22,7 @@ import {
 
 export default function Canvas() {
   const scene = useHistoryStore((s) => s.present);
-  const time = usePreviewStore((s) => s.time);
+  const time = 0;
   const selectedObjectIds = useSceneStore((s) => s.selectedObjectIds);
   const selectObject = useSceneStore((s) => s.selectObject);
   const updateObject = useSceneStore((s) => s.updateObject);
@@ -68,6 +69,103 @@ export default function Canvas() {
   const frameHpx = DEFAULT_FRAME_HEIGHT * ppu;
   const frameLeft = (pixelWidth - frameWpx) / 2;
   const frameTop = (pixelHeight - frameHpx) / 2;
+
+  const latexOverlayItems = useMemo(() => {
+    const items: Array<{
+      id: string;
+      x: number;
+      y: number;
+      rotationDeg: number;
+      opacity: number;
+      color: string;
+      fontPx: number;
+      tex: string;
+      displayMode: boolean;
+    }> = [];
+
+    for (const obj of objects) {
+      if (obj.type === "Tex" || obj.type === "MathTex") {
+        const x = sceneToCanvasX(obj.transform.position[0], pixelWidth, ppu);
+        const y = sceneToCanvasY(obj.transform.position[1], pixelHeight, ppu);
+        const fontPx = previewFontSizePx(obj.props.font_size, pixelHeight, resolution) * obj.transform.scale;
+        items.push({
+          id: obj.id,
+          x,
+          y,
+          rotationDeg: (-obj.transform.rotation * 180) / Math.PI,
+          opacity: obj.__preview.opacity ?? 1,
+          color: normalizeToCssColor(obj.props.color ?? "WHITE"),
+          fontPx,
+          tex: String(obj.props.tex ?? ""),
+          displayMode: obj.type === "MathTex"
+        });
+      }
+
+      if (obj.type === "GraphLabel") {
+        const plot = scene.objects.find((o: any) => o.id === obj.props.plot_id && o.type === "FunctionPlot") as any;
+        if (!plot) continue;
+        const axes = scene.objects.find((o: any) => o.id === plot.props.axes_id && o.type === "Axes") as any;
+        if (!axes) continue;
+        const labelType = obj.props.label?.type ?? "MathTex";
+        if (labelType === "Text") continue;
+
+        const xv = obj.props.x_value;
+        let yv = 0;
+        try {
+          const compiled = safeCompileExpr(String(plot.props.expr));
+          yv = compiled ? Number(compiled.evaluate({ x: xv })) : 0;
+        } catch {
+          yv = 0;
+        }
+        const off = obj.props.offset ?? [0, 0];
+        const xScene = axes.transform.position[0] + xv + off[0];
+        const yScene = axes.transform.position[1] + yv + off[1];
+        const x = sceneToCanvasX(xScene, pixelWidth, ppu);
+        const y = sceneToCanvasY(yScene, pixelHeight, ppu);
+        const fontPx = previewFontSizePx(obj.props.label?.font_size ?? 36, pixelHeight, resolution);
+        items.push({
+          id: obj.id,
+          x,
+          y,
+          rotationDeg: 0,
+          opacity: obj.__preview.opacity ?? 1,
+          color: normalizeToCssColor(obj.props.label?.color ?? "WHITE"),
+          fontPx,
+          tex: String(obj.props.label?.value ?? ""),
+          displayMode: labelType === "MathTex"
+        });
+      }
+
+      if (obj.type === "BraceBetweenPoints") {
+        const label = obj.props.label;
+        const labelType = label?.type ?? "MathTex";
+        if (!label?.value || labelType === "Text") continue;
+        const a = obj.props.a;
+        const b = obj.props.b;
+        const mx = (a[0] + b[0]) / 2;
+        const my = (a[1] + b[1]) / 2;
+        const dir = obj.props.direction ?? "DOWN";
+        const offset: [number, number] =
+          dir === "UP" ? [0, 0.35] : dir === "DOWN" ? [0, -0.35] : dir === "LEFT" ? [-0.35, 0] : [0.35, 0];
+        const x = sceneToCanvasX(mx + offset[0], pixelWidth, ppu);
+        const y = sceneToCanvasY(my + offset[1], pixelHeight, ppu);
+        const fontPx = previewFontSizePx(label.font_size ?? 36, pixelHeight, resolution);
+        items.push({
+          id: `${obj.id}__label`,
+          x,
+          y,
+          rotationDeg: 0,
+          opacity: obj.__preview.opacity ?? 1,
+          color: normalizeToCssColor(label.color ?? obj.props.color ?? "WHITE"),
+          fontPx,
+          tex: String(label.value ?? ""),
+          displayMode: labelType === "MathTex"
+        });
+      }
+    }
+
+    return items;
+  }, [objects, pixelWidth, pixelHeight, ppu, resolution, scene.objects]);
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
@@ -202,7 +300,7 @@ export default function Canvas() {
                     const sy = axes.transform.position[1] + yval + obj.transform.position[1];
                     pts.push(sceneToCanvasX(sx, pixelWidth, ppu), sceneToCanvasY(sy, pixelHeight, ppu));
                   }
-                  const stroke = obj.props.stroke_color ?? "YELLOW";
+                  const stroke = normalizeToCssColor(obj.props.stroke_color ?? "YELLOW");
                   const sw = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 4;
                   return <KonvaLine key={obj.id} points={pts} stroke={stroke} strokeWidth={sw} opacity={obj.__preview.opacity} listening={false} />;
                 }
@@ -226,7 +324,7 @@ export default function Canvas() {
                       const ay = sceneToCanvasY(yA, pixelHeight, ppu);
                       const bx = sceneToCanvasX(xScene, pixelWidth, ppu);
                       const by = sceneToCanvasY(yB, pixelHeight, ppu);
-                      const stroke = obj.props.stroke_color ?? "WHITE";
+                      const stroke = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
                       const sw = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 3;
                       return <KonvaLine key={obj.id} points={[ax, ay, bx, by]} stroke={stroke} strokeWidth={sw} opacity={obj.__preview.opacity} listening={false} />;
                     }
@@ -238,7 +336,7 @@ export default function Canvas() {
                   const ay = sceneToCanvasY(yA, pixelHeight, ppu);
                   const bx = sceneToCanvasX(xScene, pixelWidth, ppu);
                   const by = sceneToCanvasY(yB, pixelHeight, ppu);
-                  const stroke = obj.props.stroke_color ?? "WHITE";
+                  const stroke = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
                   const sw = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 3;
                   return <KonvaLine key={obj.id} points={[ax, ay, bx, by]} stroke={stroke} strokeWidth={sw} opacity={obj.__preview.opacity} listening={false} />;
                 }
@@ -251,7 +349,7 @@ export default function Canvas() {
                   const cx = sceneToCanvasX(xScene, pixelWidth, ppu);
                   const cy = sceneToCanvasY(yScene, pixelHeight, ppu);
                   const r = (obj.props.radius ?? 0.08) * ppu;
-                  const color = obj.props.color ?? "YELLOW";
+                  const color = normalizeToCssColor(obj.props.color ?? "YELLOW");
                   return <Circle key={obj.id} x={cx} y={cy} radius={r} fill={color} opacity={obj.__preview.opacity} listening={false} />;
                 }
 
@@ -271,8 +369,10 @@ export default function Canvas() {
                   const off = obj.props.offset ?? [0, 0];
                   const xScene = axes.transform.position[0] + xv + off[0];
                   const yScene = axes.transform.position[1] + yv + off[1];
+                  const labelType = obj.props.label?.type ?? "MathTex";
+                  if (labelType !== "Text") return null;
                   const text = obj.props.label?.value ?? "";
-                  const color = obj.props.label?.color ?? "WHITE";
+                  const color = normalizeToCssColor(obj.props.label?.color ?? "WHITE");
                   const fontPx = previewFontSizePx(obj.props.label?.font_size ?? 36, pixelHeight, (scene as any).settings?.resolution);
                   const approxWidth = (text.length ?? 0) * fontPx * 0.55;
                   const approxHeight = fontPx;
@@ -302,8 +402,9 @@ export default function Canvas() {
                   const by = sceneToCanvasY(b[1], pixelHeight, ppu);
                   const mx = (ax + bx) / 2;
                   const my = (ay + by) / 2;
-                  const color = obj.props.color ?? "WHITE";
-                  const label = obj.props.label?.value;
+                  const color = normalizeToCssColor(obj.props.color ?? "WHITE");
+                  const labelType = obj.props.label?.type ?? "MathTex";
+                  const label = labelType === "Text" ? obj.props.label?.value : undefined;
                   return (
                     <KonvaGroup key={obj.id} listening={false}>
                       <KonvaLine points={[ax, ay, bx, by]} stroke={color} strokeWidth={2} opacity={obj.__preview.opacity} />
@@ -314,7 +415,7 @@ export default function Canvas() {
 
                 if (obj.type === "Arc") {
                   // Approx arc preview using Konva arc-like polyline sampling
-                  const stroke = obj.props.stroke_color ?? "WHITE";
+                  const stroke = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
                   const sw = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 4;
                   const samples = 120;
                   const pts: number[] = [];
@@ -362,7 +463,8 @@ export default function Canvas() {
                 if (obj.type === "Circle") {
                   const strokeWidth = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 4;
                   const fillOpacity = typeof obj.props.fill_opacity === "number" ? obj.props.fill_opacity : 0;
-                  const fillColor = obj.props.fill_color ?? obj.props.stroke_color;
+                  const strokeColor = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
+                  const fillColor = normalizeToCssColor(obj.props.fill_color ?? strokeColor, strokeColor);
                   return (
                     <>
                       <Circle
@@ -372,7 +474,7 @@ export default function Canvas() {
                         fill={fillColor}
                         fillOpacity={fillOpacity}
                         opacity={obj.__preview.opacity}
-                        stroke={obj.props.stroke_color}
+                        stroke={strokeColor}
                         strokeWidth={strokeWidth}
                       />
                       {isSelected ? (
@@ -396,8 +498,8 @@ export default function Canvas() {
                   const h = (obj.type === "Square" ? obj.props.side_length : obj.props.height) * obj.transform.scale * ppu;
                   const strokeWidth = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 4;
                   const fillOpacity = typeof obj.props.fill_opacity === "number" ? obj.props.fill_opacity : 0;
-                  const strokeColor = obj.props.stroke_color ?? "WHITE";
-                  const fillColor = obj.props.fill_color ?? strokeColor;
+                  const strokeColor = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
+                  const fillColor = normalizeToCssColor(obj.props.fill_color ?? strokeColor, strokeColor);
                   return (
                     <>
                       <Rect
@@ -437,8 +539,8 @@ export default function Canvas() {
                   const ry = (obj.props.height / 2) * obj.transform.scale * ppu;
                   const strokeWidth = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 4;
                   const fillOpacity = typeof obj.props.fill_opacity === "number" ? obj.props.fill_opacity : 0;
-                  const strokeColor = obj.props.stroke_color ?? "WHITE";
-                  const fillColor = obj.props.fill_color ?? strokeColor;
+                  const strokeColor = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
+                  const fillColor = normalizeToCssColor(obj.props.fill_color ?? strokeColor, strokeColor);
                   return (
                     <>
                       <KonvaEllipse
@@ -475,8 +577,8 @@ export default function Canvas() {
                   const sides = obj.type === "Triangle" ? 3 : Math.max(3, obj.props.n);
                   const strokeWidth = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 4;
                   const fillOpacity = typeof obj.props.fill_opacity === "number" ? obj.props.fill_opacity : 0;
-                  const strokeColor = obj.props.stroke_color ?? "WHITE";
-                  const fillColor = obj.props.fill_color ?? strokeColor;
+                  const strokeColor = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
+                  const fillColor = normalizeToCssColor(obj.props.fill_color ?? strokeColor, strokeColor);
                   const radius = 1.5 * obj.transform.scale * ppu;
                   return (
                     <>
@@ -517,7 +619,7 @@ export default function Canvas() {
                   const sy = sceneToCanvasY(start[1], pixelHeight, ppu);
                   const ex = sceneToCanvasX(end[0], pixelWidth, ppu);
                   const ey = sceneToCanvasY(end[1], pixelHeight, ppu);
-                  const strokeColor = obj.props.stroke_color ?? "WHITE";
+                  const strokeColor = normalizeToCssColor(obj.props.stroke_color ?? "WHITE");
                   const strokeWidth = typeof obj.props.stroke_width === "number" ? obj.props.stroke_width : 4;
                   const points = [sx, sy, ex, ey];
                   return (
@@ -568,13 +670,15 @@ export default function Canvas() {
                   const approxHeight = fontPx;
                   const baseStrokeWidth =
                     typeof obj.props.stroke_width === "number" && obj.props.stroke_width > 0 ? obj.props.stroke_width : 0;
-                  const baseStrokeColor = obj.props.stroke_color ?? obj.props.color;
+                  const baseStrokeColor = normalizeToCssColor(obj.props.stroke_color ?? obj.props.color ?? "WHITE");
+                  // Render actual TeX via DOM overlay (KaTeX); keep an invisible Konva node for hit-testing/dragging.
+                  const fillColor = "rgba(0,0,0,0)";
                   return (
                     <>
                       <Text
                         {...common}
                         text={text}
-                        fill={obj.props.color}
+                        fill={fillColor}
                         opacity={obj.__preview.opacity}
                         fontSize={fontPx}
                         fontFamily="Times New Roman"
@@ -612,13 +716,14 @@ export default function Canvas() {
                     const approxHeight = fontPx;
                     const baseStrokeWidth =
                       typeof obj.props.stroke_width === "number" && obj.props.stroke_width > 0 ? obj.props.stroke_width : 0;
-                    const baseStrokeColor = obj.props.stroke_color ?? obj.props.color;
+                    const baseStrokeColor = normalizeToCssColor(obj.props.stroke_color ?? obj.props.color ?? "WHITE");
+                    const fillColor = normalizeToCssColor(obj.props.color ?? "WHITE");
                     return (
                       <>
                         <Text
                           {...common}
                           text={obj.props.text}
-                          fill={obj.props.color}
+                          fill={fillColor}
                           opacity={obj.__preview.opacity}
                           fontSize={fontPx}
                           fontFamily="Times New Roman"
@@ -680,6 +785,7 @@ export default function Canvas() {
               ) : null}
             </Layer>
           </Stage>
+          <LatexOverlay width={pixelWidth} height={pixelHeight} items={latexOverlayItems} />
         </div>
       </div>
     </div>
@@ -741,77 +847,6 @@ function previewObjects(
   const byId = new Map(scene.objects.map((o) => [o.id, structuredClone(o)]));
   const opacity = new Map<string, number>(scene.objects.map((o) => [o.id, 1]));
 
-  const animations = [...scene.animations].sort((a, b) => a.start - b.start);
-  for (const anim of animations) {
-    const start = anim.start;
-    const end = anim.start + anim.duration;
-    const linear = anim.duration <= 0 ? 1 : Math.min(1, Math.max(0, (t - start) / anim.duration));
-    const progress = applyRateFunction(linear, anim.rate_function ?? "linear");
-
-    for (const targetId of anim.targets ?? []) {
-      if (!byId.has(targetId)) continue;
-
-      if (anim.type === "FadeIn") {
-        const value = t < start ? 0 : t >= end ? 1 : progress;
-        opacity.set(targetId, value);
-      }
-
-      if (anim.type === "FadeOut") {
-        const value = t < start ? 1 : t >= end ? 0 : 1 - progress;
-        opacity.set(targetId, value);
-      }
-
-      if (anim.type === "Create" || anim.type === "Write") {
-        const value = t < start ? 0 : t >= end ? 1 : progress;
-        opacity.set(targetId, value);
-      }
-
-      if (anim.type === "Move") {
-        const obj = byId.get(targetId);
-        if (!obj) continue;
-        const base = obj.transform.position;
-        const to = anim.props?.to ?? base;
-        if (t < start) continue;
-        const nx = base[0] + (to[0] - base[0]) * progress;
-        const ny = base[1] + (to[1] - base[1]) * progress;
-        obj.transform.position = [nx, ny];
-        if (t >= end) obj.transform.position = to;
-      }
-
-      if (anim.type === "Scale") {
-        const obj = byId.get(targetId);
-        if (!obj) continue;
-        const base = obj.transform.scale;
-        const factor = anim.props?.factor ?? 1;
-        if (t < start) continue;
-        const ns = base + (base * factor - base) * progress;
-        obj.transform.scale = ns;
-        if (t >= end) obj.transform.scale = base * factor;
-      }
-
-      if (anim.type === "Rotate") {
-        const obj = byId.get(targetId);
-        if (!obj) continue;
-        const base = obj.transform.rotation;
-        const angle = anim.props?.angle ?? 0;
-        if (t < start) continue;
-        obj.transform.rotation = base + angle * progress;
-        if (t >= end) obj.transform.rotation = base + angle;
-      }
-
-      if (anim.type === "Transform" || anim.type === "ReplacementTransform") {
-        // Approx: swap to target at end.
-        const obj = byId.get(targetId);
-        if (!obj) continue;
-        const targetObj = byId.get(anim.props?.target);
-        if (!targetObj) continue;
-        if (t >= end) {
-          byId.set(targetId, structuredClone(targetObj));
-        }
-      }
-    }
-  }
-
   // relationships (preview only)
   const rels = scene.relationships ?? [];
   for (const rel of rels) {
@@ -850,13 +885,6 @@ function previewObjects(
   }
 
   return Array.from(byId.values()).map((o) => ({ ...o, __preview: { opacity: opacity.get(o.id) ?? 1 } }));
-}
-
-function applyRateFunction(t: number, rate: string): number {
-  if (rate === "smooth") return t * t * (3 - 2 * t);
-  if (rate === "rush_into") return t * t;
-  if (rate === "rush_from") return 1 - (1 - t) * (1 - t);
-  return t;
 }
 
 function safeCompileExpr(expr: string): { evaluate: (scope: { x: number }) => unknown } | null {

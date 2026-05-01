@@ -30,10 +30,14 @@ def validate_scene(payload: ScenePayload) -> dict:
 @app.post("/render")
 def render(payload: ScenePayload) -> dict:
     try:
-        return render_scene(payload.scene, quality="l")
+        result = render_scene(payload.scene, quality="l")
+        if not result.get("ok"):
+            return {"status": "error", "error": result.get("error", "render failed")}
+        render_id = result.get("id")
+        return {"status": "success", "video_url": f"/outputs/{render_id}/video.mp4", "id": render_id}
     except Exception as e:
         # Always return JSON so the frontend can display a usable error.
-        return {"ok": False, "error": str(e)}
+        return {"status": "error", "error": str(e)}
 
 
 @app.get("/outputs/{render_id}/video.mp4")

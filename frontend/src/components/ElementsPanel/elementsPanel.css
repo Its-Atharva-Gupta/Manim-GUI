@@ -25,6 +25,88 @@
   color: #374151;
 }
 
+.sectionHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.miniBtn {
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  color: #374151;
+}
+
+.miniBtn:hover {
+  background: #f9fafb;
+}
+
+.filterInput {
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.itemsList {
+  max-height: 220px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.itemsEmpty {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.itemRow {
+  height: auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemRow:hover {
+  background: #f9fafb;
+}
+
+.itemRowActive {
+  border-color: rgba(245, 158, 11, 0.7);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+.itemName {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.itemMeta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.itemsHint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
 .elementsRoot button {
   height: 30px;
   border-radius: 8px;
@@ -63,4 +145,3 @@
 .fileLabel input {
   display: none;
 }
-

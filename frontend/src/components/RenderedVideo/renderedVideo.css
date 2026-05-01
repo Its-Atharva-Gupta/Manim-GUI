@@ -1,0 +1,20 @@
+.renderedRoot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(1200px 600px at 50% 30%, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0) 55%),
+    #0b1220;
+}
+
+.renderedVideo {
+  width: min(100%, 1100px);
+  height: auto;
+  max-height: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #000;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+

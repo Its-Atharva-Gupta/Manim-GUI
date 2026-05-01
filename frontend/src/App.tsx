@@ -3,9 +3,10 @@ import Canvas from "./components/Canvas/Canvas";
 import ElementsPanel from "./components/ElementsPanel/ElementsPanel";
 import PropertiesPanel from "./components/PropertiesPanel/PropertiesPanel";
 import AnimationsPanel from "./components/PropertiesPanel/AnimationsPanel";
-import Timeline from "./components/Timeline/Timeline";
+import RenderedVideo from "./components/RenderedVideo/RenderedVideo";
 import { useHistoryStore } from "./store/historyStore";
 import { useRenderStore } from "./store/renderStore";
+import { useUiStore } from "./store/uiStore";
 import { validateScene } from "./shared/validateScene";
 
 const SAMPLE_SCENE = {
@@ -35,9 +36,12 @@ const SAMPLE_SCENE = {
 
 export default function App() {
   const scene = useHistoryStore((s) => s.present);
-  const renderId = useRenderStore((s) => s.renderId);
   const renderStatus = useRenderStore((s) => s.status);
   const renderError = useRenderStore((s) => s.error);
+  const videoUrl = useRenderStore((s) => s.videoUrl);
+  const viewMode = useUiStore((s) => s.viewMode);
+  const setViewMode = useUiStore((s) => s.setViewMode);
+  const clearRender = useRenderStore((s) => s.clear);
   const parsed = validateScene(scene ?? SAMPLE_SCENE);
 
   return (
@@ -47,23 +51,30 @@ export default function App() {
           <ElementsPanel />
         </div>
         <div className="canvasPane">
-          <Canvas />
-          <Timeline />
+          {viewMode === "editor" ? (
+            <>
+              <Canvas />
+            </>
+          ) : (
+            <>
+              {videoUrl ? <RenderedVideo src={videoUrl} autoplay /> : null}
+              <div className="renderedActions">
+                <button
+                  onClick={() => {
+                    clearRender();
+                    setViewMode("editor");
+                  }}
+                >
+                  Back to Editor
+                </button>
+              </div>
+            </>
+          )}
         </div>
         <div className="propsPane">
           <div className="statusRow">Schema: {parsed.ok ? "OK" : "Invalid"}</div>
           {!parsed.ok ? <pre className="errorBox">{parsed.error}</pre> : null}
           {renderStatus === "error" ? <pre className="errorBox">{renderError}</pre> : null}
-          {renderId ? (
-            <div style={{ marginBottom: 12 }}>
-              <div className="statusRow">Last render: {renderId}</div>
-              <video
-                controls
-                style={{ width: "100%", borderRadius: 8, border: "1px solid #e5e7eb" }}
-                src={`http://localhost:8000/outputs/${renderId}/video.mp4`}
-              />
-            </div>
-          ) : null}
           <PropertiesPanel />
           <AnimationsPanel />
         </div>

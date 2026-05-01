@@ -7,6 +7,7 @@ import { migrateScene } from "../../shared/migrateScene";
 import { validateScene } from "../../shared/validateScene";
 
 import "./elementsPanel.css";
+import { useMemo, useState } from "react";
 
 export default function ElementsPanel() {
   const addCircle = useSceneStore((s) => s.addCircle);
@@ -35,6 +36,8 @@ export default function ElementsPanel() {
   const addRelationship = useSceneStore((s) => s.addRelationship);
   const deleteRelationship = useSceneStore((s) => s.deleteRelationship);
   const selectedIds = useSceneStore((s) => s.selectedObjectIds);
+  const selectObject = useSceneStore((s) => s.selectObject);
+  const clearSelection = useSceneStore((s) => s.clearSelection);
   const alignCenter = useSceneStore((s) => s.alignCenter);
   const alignHorizontal = useSceneStore((s) => s.alignHorizontal);
   const alignVertical = useSceneStore((s) => s.alignVertical);
@@ -43,6 +46,16 @@ export default function ElementsPanel() {
 
   const scene = useHistoryStore((s) => s.present);
   const reset = useHistoryStore((s) => s.reset);
+  const [filter, setFilter] = useState("");
+  const filteredObjects = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    const objects = scene.objects ?? [];
+    if (!q) return objects;
+    return objects.filter((o: any) => {
+      const hay = `${o.name ?? ""} ${o.type ?? ""} ${o.id ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [filter, scene.objects]);
 
   const render = useRenderStore((s) => s.render);
   const renderStatus = useRenderStore((s) => s.status);
@@ -58,6 +71,44 @@ export default function ElementsPanel() {
   return (
     <div className="elementsRoot">
       <div className="panelTitle">Elements</div>
+
+      <div className="section">
+        <div className="sectionHeaderRow">
+          <div className="sectionTitle">Scene Items</div>
+          <button className="miniBtn" onClick={clearSelection} title="Clear selection">
+            Clear
+          </button>
+        </div>
+        <input
+          className="filterInput"
+          value={filter}
+          placeholder="Search (name / type / id)"
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        <div className="itemsList">
+          {filteredObjects.length === 0 ? (
+            <div className="itemsEmpty">No items match.</div>
+          ) : (
+            filteredObjects.map((o: any) => {
+              const active = selectedIds.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  className={active ? "itemRow itemRowActive" : "itemRow"}
+                  onClick={(e) => selectObject(o.id, (e as any).shiftKey)}
+                  title={`${o.type} (${o.id})`}
+                >
+                  <span className="itemName">{o.name}</span>
+                  <span className="itemMeta">
+                    {o.type} · {o.id}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+        <div className="itemsHint">Tip: Shift-click to multi-select.</div>
+      </div>
 
       <div className="section">
         <div className="sectionTitle">Shapes</div>
